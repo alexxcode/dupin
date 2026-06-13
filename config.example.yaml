@@ -19,10 +19,16 @@ versions:
   feature_version: feat-v1
   model_version: m-v1
 
-# Corte temporal candidato (Fase 1 verifica viabilidad; Fase 3 lo formaliza).
-# step: 1 = 1 hora; 744 steps = 30 días. Corte en día 20 → step 480.
+# Split temporal tres-vías (Fase 3). step: 1 = 1 hora; 744 steps = 30 días.
+# train [0, 432)  ≈ 18 días  |  val [432, 480)  ≈ 2 días  |  test [480, 744) ≈ 10 días.
+# El test de cola es más denso en fraude (futuro distinto del pasado): honesto.
 split:
-  train_max_step: 480              # train: steps [0, 480)  ≈ primeros 20 días
-  # val/test: steps [480, 744)     ≈ últimos 10 días (se subdivide en Fase 3)
+  train_max_step: 432
+  val_max_step: 480
+
+# Punto de operación de cabecera: revisar como máximo este % de operaciones.
+evaluation:
+  review_budget: 0.01              # recall @ ≤1% de operaciones revisadas
+  cost_fn_over_fp: 100             # curva de costo secundaria: FN cuesta 100× FP
 
 seed: 42
