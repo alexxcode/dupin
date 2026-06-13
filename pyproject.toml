@@ -1,0 +1,62 @@
+[project]
+name = "dupin"
+version = "0.1.0"
+description = "Real-Time Transaction Fraud Scoring — honest temporal evaluation over PaySim."
+requires-python = ">=3.11,<3.13"
+license = { text = "MIT" }
+authors = [{ name = "Alexis" }]
+readme = "README.md"
+
+# Dependencias núcleo (features + serving comparten estas).
+dependencies = [
+    "pandas~=2.2",
+    "numpy~=2.1",
+    "pyarrow~=17.0",
+    "scikit-learn~=1.5",
+    "google-cloud-storage~=2.18",
+    "pyyaml~=6.0",
+]
+
+[project.optional-dependencies]
+# Fase 1 — exploración en Colab.
+explore = [
+    "matplotlib~=3.9",
+    "seaborn~=0.13",
+    "jupyter~=1.1",
+    "gcsfs~=2024.6",
+]
+# Fase 4 — modelado.
+model = [
+    "xgboost~=2.1",
+    "lightgbm~=4.5",
+    "shap~=0.46",
+]
+# Fase 5 — serving.
+serve = [
+    "fastapi~=0.115",
+    "uvicorn[standard]~=0.32",
+    "pydantic~=2.9",
+]
+# Desarrollo / tests.
+dev = [
+    "pytest~=8.3",
+    "ruff~=0.7",
+]
+
+[tool.dupin]
+# Versionado del proyecto. Ver Invariantes de implementación (instrucciones).
+# Cambiar feature_version obliga a regenerar la matriz de features.
+feature_version = "feat-v1"
+model_version = "m-v1"
+random_seed = 42
+
+# NOTA sobre el pin: ~= fija major.minor (compatible-release). El freeze exacto
+# de versiones de parche se materializa con un lockfile tras el primer build del
+# entorno. Las semillas se fijan en código para reproducibilidad (Invariante 7).
+
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools]
+packages = ["data", "features", "training", "evaluation", "serving"]

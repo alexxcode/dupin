@@ -1,0 +1,28 @@
+# Plantilla de configuración de Dupin.
+# Copiar a config.yaml y ajustar. config.yaml está en .gitignore (Invariante 8).
+
+gcp:
+  project_id: dupin-dupin          # Proyecto fijado en Fase 0. Todo el desarrollo aquí.
+  region: us-central1
+
+buckets:
+  raw: dupin-dupin-raw             # Transacciones crudas, inmutables.
+  features: dupin-dupin-features   # Matriz de features versionada.
+  artifacts: dupin-dupin-artifacts # Bundle: model + schema + threshold + metadata.
+
+data:
+  # PaySim — Lopez-Rojas, Elmir & Axelsson (2016). CC BY-SA 4.0. Vía Kaggle.
+  kaggle_dataset: ealaxi/paysim1
+  raw_object: raw/paysim/PS_20174392719_1491204439457_log.csv
+
+versions:
+  feature_version: feat-v1
+  model_version: m-v1
+
+# Corte temporal candidato (Fase 1 verifica viabilidad; Fase 3 lo formaliza).
+# step: 1 = 1 hora; 744 steps = 30 días. Corte en día 20 → step 480.
+split:
+  train_max_step: 480              # train: steps [0, 480)  ≈ primeros 20 días
+  # val/test: steps [480, 744)     ≈ últimos 10 días (se subdivide en Fase 3)
+
+seed: 42

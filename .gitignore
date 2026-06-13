@@ -1,0 +1,40 @@
+# === DATOS — NUNCA a git (Invariante 8) ===
+# Los datos viven en GCS + Kaggle, jamás en el repo. PaySim es CC BY-SA 4.0:
+# redistribuir el CSV heredaría ShareAlike. Mantenerlo fuera del repo nos
+# mantiene limpios. Ver README → Licencia y atribución.
+*.csv
+*.parquet
+*.tsv
+*.zip
+*.gz
+data/raw/
+data/local/
+
+# === SECRETOS — nunca a git (Invariante 8) ===
+kaggle.json
+service-account*.json
+*-key.json
+credentials*.json
+.env
+config.yaml          # config.example.yaml SÍ se versiona; config.yaml no.
+
+# === Python ===
+__pycache__/
+*.py[cod]
+*.egg-info/
+.venv/
+venv/
+dist/
+build/
+.pytest_cache/
+.ruff_cache/
+
+# === Notebooks ===
+.ipynb_checkpoints/
+
+# === SO / editor / herramientas ===
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
+.claude/
