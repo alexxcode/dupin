@@ -85,7 +85,7 @@ dupin/
 |------|-------------|--------|
 | 0 | Dataset, licencia, pregunta, GCP | ✅ Completa |
 | 1 | Exploración y entendimiento del fraude | ✅ Completa — ver [docs/phase1_findings.md](docs/phase1_findings.md) |
-| 2 | Features de comportamiento | ⏳ |
+| 2 | Features de comportamiento | ✅ Código + tests (10/10) · matriz: correr [notebooks/02_build_features.ipynb](notebooks/02_build_features.ipynb) |
 | 3 | Régimen de evaluación honesto | ⏳ |
 | 4 | Modelado | ⏳ |
 | 5 | Serving end-to-end | ⏳ |
