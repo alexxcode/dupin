@@ -88,7 +88,7 @@ dupin/
 | 4 | Modelado | ✅ Completa — LightGBM, bundle `m-v1` · ver [docs/phase4_findings.md](docs/phase4_findings.md) (recall 35.3% @1%, 78% @5%) |
 | 5 | Serving end-to-end | ✅ **Desplegado en Cloud Run** · FastAPI `/v1/score` · 41/41 tests |
 | 6 | Dashboard en vivo | ✅ **Desplegado** · consola de riesgo same-origin (stream, KPIs, umbral interactivo) |
-| 7 | Empaquetado y narrativa | ⏳ |
+| 7 | Empaquetado y narrativa | ✅ Completa — [model card](docs/model_card_m-v1.md) · [guion de difusión](docs/difusion.md) |
 
 ---
 
@@ -108,6 +108,23 @@ Envolvente honesta: ~54% recall al 2% de revisión, ~78% al 5%. PR-AUC temporal
 descompuesto en fuga de etiqueta (columnas de balance) y fuga temporal (split), es
 el resultado. Detalle: [docs/phase3_findings.md](docs/phase3_findings.md) ·
 [docs/phase4_findings.md](docs/phase4_findings.md).
+
+---
+
+## Alcance y limitaciones
+
+Honestidad de origen, declarada explícitamente:
+
+- **Dato sintético.** Entrenado y evaluado sobre PaySim. Los patrones de fraude
+  sintéticos son más simples y separables que el fraude real: **las métricas
+  absolutas no se transfieren a producción.** El valor es la *metodología*, no el
+  número. Esto **no es un modelo de producción.**
+- **Sin grafos de entidades** (v1 es tabular por entidad individual).
+- **Scoring por transacción, no por sesión.**
+- **Umbral único global**, sin segmentación por cliente/canal.
+- **Estado cold-start en serving** (en producción iría sobre un feature store).
+
+Detalle completo en la [model card](docs/model_card_m-v1.md).
 
 ---
 
@@ -166,6 +183,14 @@ LightGBM sobre el test temporal: cuánto fraude se atrapa según el presupuesto 
 revisión. A 1% se atrapa ~35%, a 5% ~78%. Es el techo honesto y desplegable.
 
 ![Envolvente recall vs presupuesto](docs/images/envolvente-recall-presupuesto.png)
+
+### Fases 5–6 — Serving y dashboard en vivo
+
+El modelo desplegado en Cloud Run con su dashboard de monitoreo: stream en vivo
+coloreado por decisión, score como medidor, panel de razones y control de umbral
+interactivo. Sobre el feed real del periodo de test, los fraudes cruzan el umbral
+(REVIEW ámbar, BLOCK rojo) con su marca de ground-truth. **Pruébalo en vivo:**
+[dupin-705834513207.us-central1.run.app](https://dupin-705834513207.us-central1.run.app).
 
 ---
 
