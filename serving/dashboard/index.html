@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Dupin · Live Fraud Scoring</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <header>
+    <div class="brand">Dupin <span>Live Fraud Scoring</span></div>
+    <div class="badges">model <b id="modelV">—</b> · features <b id="featV">—</b></div>
+    <div class="controls">
+      <button id="toggle">❚❚ Pausar</button>
+      <label>velocidad <input type="range" id="speed" min="40" max="600" step="20" value="220"></label>
+      <span class="dot" id="statusDot"></span>
+    </div>
+  </header>
+
+  <section class="kpis">
+    <div class="kpi"><div class="label">Throughput</div><div class="val" id="kThroughput">0</div><div class="sub">tx/s</div></div>
+    <div class="kpi"><div class="label">Fraude atrapado</div><div class="val" id="kRecall">—</div><div class="sub">recall @ umbral</div></div>
+    <div class="kpi"><div class="label">Tasa de revisión</div><div class="val" id="kReview">—</div><div class="sub">% del flujo marcado</div></div>
+    <div class="kpi"><div class="label">Precisión</div><div class="val" id="kPrecision">—</div><div class="sub">de lo marcado</div></div>
+    <div class="kpi"><div class="label">Latencia</div><div class="val" id="kP50">—</div><div class="sub" id="kP99">p50 / p99 ms</div></div>
+  </section>
+
+  <main>
+    <div class="stream-panel">
+      <div class="panel-head">Stream de transacciones <span id="count">0</span></div>
+      <div class="stream" id="stream"></div>
+    </div>
+    <aside>
+      <div class="panel">
+        <div class="panel-head">Decisiones</div>
+        <div id="donut"></div>
+        <div class="legend" id="donutLegend"></div>
+      </div>
+      <div class="panel reasons-panel">
+        <div class="panel-head">Razón del flag</div>
+        <div class="reasons" id="reasons">Selecciona una transacción del stream para ver por qué se marcó.</div>
+      </div>
+    </aside>
+  </main>
+
+  <footer class="threshold-bar">
+    <div class="thr-label">Umbral de revisión <b id="thrVal">0.500</b></div>
+    <input type="range" id="thr" min="0" max="1" step="0.001" value="0.5">
+    <div class="thr-trade" id="tradeoff">Mueve el umbral para ver el trade-off</div>
+  </footer>
+
+  <script src="app.js"></script>
+</body>
+</html>

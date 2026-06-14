@@ -10,9 +10,12 @@ from __future__ import annotations
 
 import os
 from contextlib import asynccontextmanager
+from pathlib import Path
 
 from fastapi import FastAPI, HTTPException
+from fastapi.staticfiles import StaticFiles
 
+from serving.demo_feed import load_demo_feed
 from serving.model_runtime import ModelRuntime
 from serving.schemas import Reason, ScoreRequest, ScoreResponse
 
@@ -90,6 +93,13 @@ def score(req: ScoreRequest) -> ScoreResponse:
     )
 
 
-@app.get("/")
-def root() -> dict:
-    return {"service": "dupin", "docs": "/docs", "health": "/health", "score": "POST /v1/score"}
+@app.get("/v1/demo-feed")
+def demo_feed(limit: int = 3000) -> list[dict]:
+    """Feed de transacciones para el dashboard (muestra real de GCS o sintético)."""
+    return load_demo_feed(limit)
+
+
+# Dashboard en vivo, servido same-origin. Se monta AL FINAL para no eclipsar las
+# rutas de API; cualquier path no-API cae al estático (index.html en "/").
+_DASHBOARD_DIR = Path(__file__).parent / "dashboard"
+app.mount("/", StaticFiles(directory=str(_DASHBOARD_DIR), html=True), name="dashboard")

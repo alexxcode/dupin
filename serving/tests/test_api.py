@@ -100,6 +100,22 @@ def test_state_accumulates_across_calls(client):
     assert after == before + 2
 
 
+def test_demo_feed_returns_transactions(client):
+    r = client.get("/v1/demo-feed?limit=50")
+    assert r.status_code == 200
+    feed = r.json()
+    assert isinstance(feed, list) and len(feed) == 50
+    for k in ("step", "type", "amount", "nameOrig", "nameDest"):
+        assert k in feed[0]
+
+
+def test_dashboard_served_at_root(client):
+    r = client.get("/")
+    assert r.status_code == 200
+    assert "text/html" in r.headers["content-type"]
+    assert "Dupin" in r.text
+
+
 def test_health_degraded_without_model(monkeypatch):
     monkeypatch.delenv("DUPIN_BUNDLE_URI", raising=False)
     with TestClient(app_module.app) as c:

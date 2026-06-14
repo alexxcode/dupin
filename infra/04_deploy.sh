@@ -25,7 +25,7 @@ gcloud run deploy "${SERVICE}" \
   --image="${IMAGE}" \
   --region="${REGION}" \
   --service-account="${SA_EMAIL}" \
-  --set-env-vars="DUPIN_BUNDLE_URI=${BUNDLE_URI}" \
+  --set-env-vars="DUPIN_BUNDLE_URI=${BUNDLE_URI},DUPIN_DEMO_FEED_URI=gs://${PROJECT_ID}-artifacts/demo/feed.jsonl" \
   --memory=1Gi --cpu=1 --min-instances=0 \
   --allow-unauthenticated
 
