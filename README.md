@@ -111,6 +111,64 @@ el resultado. Detalle: [docs/phase3_findings.md](docs/phase3_findings.md) ·
 
 ---
 
+## El proceso en imágenes
+
+### Fase 1 — Exploración del fraude
+
+El dataset crudo de PaySim. Ya en las primeras filas se ve la trampa: las
+transacciones de fraude (`isFraud=1`, filas TRANSFER/CASH_OUT) tienen
+`newbalanceOrig = 0` —la cuenta vaciada—, fuga de etiqueta en las columnas de
+balance.
+
+![PaySim crudo](docs/images/paysim-raw-head.png)
+
+El fraude vive **solo** en TRANSFER y CASH_OUT (cero en PAYMENT/DEBIT/CASH_IN):
+un filtro estructural que define la superficie de scoring.
+
+![Tasa de fraude por tipo](docs/images/fraude-por-tipo.png)
+
+Los montos de fraude se desplazan a la derecha (importes mayores) frente a los
+legítimos, pero con fuerte solapamiento: el monto solo no separa.
+
+![Montos fraude vs legítimo](docs/images/montos-fraude-vs-legit.png)
+
+Firma horaria: el volumen legítimo es diurno, pero el fraude se concentra en la
+**madrugada (3–6h)** —desalineado del tráfico normal—.
+
+![Fraude por hora del día](docs/images/fraude-por-hora.png)
+
+Estructura temporal sobre los 744 steps (30 días): el volumen está front-loaded y
+cae en la cola, mientras el fraude aparece a lo largo de todo el rango. Esto es lo
+que hace viable —y honesto— el corte temporal.
+
+![Estructura temporal](docs/images/estructura-temporal.png)
+
+### Fase 2 — Matriz de features `feat-v1`
+
+Sanity de la matriz: 2.77M filas en la superficie, tasa base 0.30%, sin NaN y
+**sin columnas de balance**. El `describe()` confirma que los receptores tienen
+historia (`dest_prior_count` media 7.7) mientras `orig_prior_count` es casi cero
+—los originadores son de un solo uso, justo el pivote a `nameDest`—.
+
+![Matriz feat-v1](docs/images/matriz-feat-v1.png)
+
+### Fase 3 — Evaluación honesta
+
+La imagen ancla del proyecto: la **misma** capacidad del modelo medida con split
+aleatorio (optimista) vs. temporal (honesto). La curva temporal por debajo a
+recall medio-alto es el optimismo que el split aleatorio esconde.
+
+![Curva PR temporal vs aleatorio](docs/images/curva-pr-temporal-vs-aleatorio.png)
+
+### Fase 4 — Envolvente del modelo final
+
+LightGBM sobre el test temporal: cuánto fraude se atrapa según el presupuesto de
+revisión. A 1% se atrapa ~35%, a 5% ~78%. Es el techo honesto y desplegable.
+
+![Envolvente recall vs presupuesto](docs/images/envolvente-recall-presupuesto.png)
+
+---
+
 ## API de scoring
 
 **En vivo:** `https://dupin-705834513207.us-central1.run.app` (Cloud Run, escala a cero).
