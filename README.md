@@ -86,7 +86,7 @@ dupin/
 | 2 | Features de comportamiento | ✅ Completa — matriz en `gs://dupin-dupin-features/feat-v1/` (2.77M filas) |
 | 3 | Régimen de evaluación honesto | ✅ Completa — resultado en [docs/phase3_findings.md](docs/phase3_findings.md) (recall 99.8% → 20.7%) |
 | 4 | Modelado | ✅ Completa — LightGBM, bundle `m-v1` · ver [docs/phase4_findings.md](docs/phase4_findings.md) (recall 35.3% @1%, 78% @5%) |
-| 5 | Serving end-to-end | ✅ Código + tests (41/41) · FastAPI `/v1/score` · deploy: `infra/04_deploy.sh` |
+| 5 | Serving end-to-end | ✅ **Desplegado en Cloud Run** · FastAPI `/v1/score` · 41/41 tests |
 | 6 | Dashboard en vivo | ⏳ |
 | 7 | Empaquetado y narrativa | ⏳ |
 
@@ -112,6 +112,8 @@ el resultado. Detalle: [docs/phase3_findings.md](docs/phase3_findings.md) ·
 ---
 
 ## API de scoring
+
+**En vivo:** `https://dupin-705834513207.us-central1.run.app` (Cloud Run, escala a cero).
 
 `POST /v1/score` — transacción cruda → score + decisión + razón legible + latencia:
 

@@ -10,6 +10,10 @@ RUN python -m venv /opt/venv \
 
 FROM python:3.11-slim
 ENV PATH="/opt/venv/bin:$PATH" PYTHONUNBUFFERED=1 PORT=8080
+# LightGBM requiere OpenMP (libgomp1) en runtime.
+RUN apt-get update \
+    && apt-get install -y --no-install-recommends libgomp1 \
+    && rm -rf /var/lib/apt/lists/*
 COPY --from=builder /opt/venv /opt/venv
 
 WORKDIR /app

@@ -1,0 +1,13 @@
+# Contexto de build de Cloud Build. El Dockerfile solo copia data/ features/
+# evaluation/ training/ serving/; el resto no hace falta subirlo.
+.git/
+.gcloudignore
+.venv/
+venv/
+__pycache__/
+.pytest_cache/
+.ruff_cache/
+notebooks/
+docs/
+*.md
+.gitignore
