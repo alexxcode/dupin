@@ -87,7 +87,7 @@ dupin/
 | 3 | Régimen de evaluación honesto | ✅ Completa — resultado en [docs/phase3_findings.md](docs/phase3_findings.md) (recall 99.8% → 20.7%) |
 | 4 | Modelado | ✅ Completa — LightGBM, bundle `m-v1` · ver [docs/phase4_findings.md](docs/phase4_findings.md) (recall 35.3% @1%, 78% @5%) |
 | 5 | Serving end-to-end | ✅ **Desplegado en Cloud Run** · FastAPI `/v1/score` · 41/41 tests |
-| 6 | Dashboard en vivo | ⏳ |
+| 6 | Dashboard en vivo | ✅ **Desplegado** · consola de riesgo same-origin (stream, KPIs, umbral interactivo) |
 | 7 | Empaquetado y narrativa | ⏳ |
 
 ---
@@ -171,7 +171,10 @@ revisión. A 1% se atrapa ~35%, a 5% ~78%. Es el techo honesto y desplegable.
 
 ## API de scoring
 
-**En vivo:** `https://dupin-705834513207.us-central1.run.app` (Cloud Run, escala a cero).
+**En vivo:** `https://dupin-705834513207.us-central1.run.app` — abre la raíz para el
+**dashboard de monitoreo** (stream de transacciones coloreadas por decisión, score
+como medidor, panel de razones, KPIs de recall/precisión/latencia, y control de
+umbral interactivo que hace tangible el trade-off). Cloud Run, escala a cero.
 
 `POST /v1/score` — transacción cruda → score + decisión + razón legible + latencia:
 
