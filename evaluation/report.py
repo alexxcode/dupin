@@ -5,7 +5,12 @@ import json
 
 
 def format_table(report: dict) -> str:
-    """Tabla temporal-vs-aleatorio en markdown. El gap es el protagonista."""
+    """Tabla temporal-vs-aleatorio en markdown. El gap de recall es el protagonista.
+
+    Cabecera = recall@budget (comparable entre regímenes, al mismo punto de
+    operación). El PR-AUC se muestra junto a la prevalencia del test porque NO es
+    comparable entre regímenes de distinta prevalencia.
+    """
     t = report["temporal"]
     r = report["random"]
     top, rop = t["operating_point"], r["operating_point"]
@@ -14,21 +19,24 @@ def format_table(report: dict) -> str:
         f"Punto de operación: revisar ≤ {budget:.1%} de operaciones "
         f"(umbral fijado sobre validación).",
         "",
-        "| Régimen | PR-AUC | ROC-AUC | Recall@budget | Precision | Review rate |",
+        "| Régimen | Recall@budget | Precision | Review rate | PR-AUC | prev. test |",
         "|---|---|---|---|---|---|",
         _row("Aleatorio (optimista, NO desplegable)", r, rop),
         _row("**Temporal (honesto, desplegable)**", t, top),
         "",
-        f"**Gap por fuga temporal:** PR-AUC −{report['gap']['pr_auc']:.4f} · "
-        f"Recall −{report['gap']['recall']:.4f}",
+        f"**Gap por fuga temporal (recall@budget): −{report['gap']['recall']:.4f}** "
+        f"— el split aleatorio sobreestima el fraude atrapado.",
+        f"_PR-AUC no comparable entre regímenes (prevalencia test "
+        f"{r['test_prevalence']:.4f} vs {t['test_prevalence']:.4f})._",
     ]
     return "\n".join(lines)
 
 
 def _row(name: str, regime: dict, op: dict) -> str:
     return (
-        f"| {name} | {regime['pr_auc']:.4f} | {regime['roc_auc']:.4f} | "
-        f"{op['recall']:.4f} | {op['precision']:.4f} | {op['review_rate']:.4f} |"
+        f"| {name} | {op['recall']:.4f} | {op['precision']:.4f} | "
+        f"{op['review_rate']:.4f} | {regime['pr_auc']:.4f} | "
+        f"{regime['test_prevalence']:.4f} |"
     )
 
 

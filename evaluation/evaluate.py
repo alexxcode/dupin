@@ -65,6 +65,10 @@ def _regime(make_model, X, y, assign, budget, seed):
     summary = {
         "pr_auc": metrics.average_precision(y[te], sc_test),
         "roc_auc": metrics.roc_auc(y[te], sc_test),
+        # Prevalencia del test: clave para interpretar el PR-AUC. El PR-AUC de un
+        # clasificador aleatorio == prevalencia, así que NO es comparable entre
+        # regímenes con distinta prevalencia (temporal-cola vs aleatorio-global).
+        "test_prevalence": float(y[te].mean()),
         "operating_point": op,
     }
     return summary, y[te], sc_test, clf
@@ -109,11 +113,16 @@ def evaluate(
         "temporal": temporal,
         "random": random,
         "gap": {
-            "pr_auc": random["pr_auc"] - temporal["pr_auc"],
+            # Cabecera del eje TEMPORAL: el recall@budget al MISMO punto de
+            # operación de negocio. Cuánto sobreestima el split aleatorio el
+            # fraude atrapado en producción.
             "recall": (
                 random["operating_point"]["recall"]
                 - temporal["operating_point"]["recall"]
             ),
+            # PR-AUC: contextual, NO comparable entre regímenes (distinta
+            # prevalencia de test). Ver test_prevalence en cada régimen.
+            "pr_auc_confounded_by_prevalence": random["pr_auc"] - temporal["pr_auc"],
         },
     }
     if return_scores:
