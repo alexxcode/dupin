@@ -87,7 +87,7 @@ dupin/
 | 1 | Exploración y entendimiento del fraude | ✅ Completa — ver [docs/phase1_findings.md](docs/phase1_findings.md) |
 | 2 | Features de comportamiento | ✅ Completa — matriz en `gs://dupin-dupin-features/feat-v1/` (2.77M filas) |
 | 3 | Régimen de evaluación honesto | ✅ Completa — resultado en [docs/phase3_findings.md](docs/phase3_findings.md) (recall 99.8% → 20.7%) |
-| 4 | Modelado | ⏳ |
+| 4 | Modelado | ✅ Código + tests (34/34) · correr [notebooks/04_train.ipynb](notebooks/04_train.ipynb) → bundle `m-v1` |
 | 5 | Serving end-to-end | ⏳ |
 | 6 | Dashboard en vivo | ⏳ |
 | 7 | Empaquetado y narrativa | ⏳ |

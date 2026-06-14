@@ -64,6 +64,24 @@ def select_threshold(y_val, scores_val, budget: float = 0.01) -> float:
     return threshold_for_review_budget(scores_val, budget)
 
 
+def recall_at_review_rate(y_true, scores, review_rate: float) -> dict:
+    """Punto de operación al fijar el umbral PARA lograr `review_rate` EN ESTE set.
+
+    Es la ENVOLVENTE de capacidad del modelo (qué recall es alcanzable a ese
+    presupuesto), no el umbral desplegado (que se fija sobre validación). Útil
+    para mostrar el techo honesto sin el sesgo de transferencia val→test.
+    """
+    thr = threshold_for_review_budget(scores, review_rate)
+    return operating_point(y_true, scores, thr)
+
+
+def recall_review_curve(y_true, scores, rates=None) -> list[dict]:
+    """Curva recall vs presupuesto de revisión sobre un mismo set (envolvente)."""
+    if rates is None:
+        rates = [0.001, 0.002, 0.005, 0.01, 0.02, 0.05, 0.10]
+    return [recall_at_review_rate(y_true, scores, r) for r in rates]
+
+
 def cost_curve(
     y_true, scores, fn_cost: float = 100.0, fp_cost: float = 1.0, n_points: int = 200
 ) -> dict:

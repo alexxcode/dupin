@@ -29,6 +29,11 @@ split:
 # Punto de operación de cabecera: revisar como máximo este % de operaciones.
 evaluation:
   review_budget: 0.01              # recall @ ≤1% de operaciones revisadas
+  block_budget: 0.001              # auto-block: top ~0.1% (alta precisión)
   cost_fn_over_fp: 100             # curva de costo secundaria: FN cuesta 100× FP
+
+# Bundle versionado (Fase 4) → artifacts/m-v1/ (model.joblib + manifest.json).
+model:
+  family: lightgbm
 
 seed: 42

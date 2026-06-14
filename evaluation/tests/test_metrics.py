@@ -39,6 +39,24 @@ def test_recall_drops_when_threshold_too_high():
     assert op["tp"] == 0 and op["recall"] == 0.0
 
 
+def test_recall_at_review_rate_hits_budget():
+    rng = np.random.default_rng(0)
+    y = (rng.random(10000) < 0.05).astype(int)
+    scores = rng.random(10000) * 0.5 + y * 0.5  # señal
+    op = metrics.recall_at_review_rate(y, scores, review_rate=0.02)
+    assert op["review_rate"] == pytest.approx(0.02, abs=0.01)
+
+
+def test_recall_review_curve_monotonic_recall():
+    rng = np.random.default_rng(1)
+    y = (rng.random(5000) < 0.1).astype(int)
+    scores = rng.random(5000) * 0.5 + y * 0.5
+    curve = metrics.recall_review_curve(y, scores, rates=[0.01, 0.05, 0.1, 0.2])
+    recalls = [op["recall"] for op in curve]
+    # Más presupuesto de revisión nunca reduce el recall.
+    assert all(b >= a - 1e-9 for a, b in zip(recalls, recalls[1:]))
+
+
 def test_cost_curve_prefers_catching_fraud_when_fn_expensive():
     # Señal perfecta: el umbral óptimo debe atrapar todo el fraude (recall alto).
     y = np.array([0] * 90 + [1] * 10)
