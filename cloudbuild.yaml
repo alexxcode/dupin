@@ -1,0 +1,13 @@
+# Build + push de la imagen de serving a Artifact Registry.
+# Usado por infra/04_deploy.sh. Contexto = raíz del repo; Dockerfile en serving/.
+steps:
+  - name: gcr.io/cloud-builders/docker
+    args: ["build", "-f", "serving/Dockerfile", "-t", "${_IMAGE}", "."]
+  - name: gcr.io/cloud-builders/docker
+    args: ["push", "${_IMAGE}"]
+images:
+  - "${_IMAGE}"
+substitutions:
+  _IMAGE: "us-central1-docker.pkg.dev/dupin-dupin/dupin/dupin:latest"
+options:
+  logging: CLOUD_LOGGING_ONLY

@@ -65,16 +65,14 @@ dupin/
 │   ├── download/colab_ingest.ipynb   # ingesta Kaggle→GCS (sin pasar por local)
 │   ├── schema.py                     # esquema tipado de la transacción cruda
 │   └── splits.py                     # cortes temporales (Fase 3)
-├── notebooks/
-│   └── 01_fraud_exploration.ipynb    # Fase 1 — exploración y entendimiento
-├── features/                         # Fase 2 — transacción→vector, sin fuga
-├── training/                         # Fase 4 — split temporal → fit → bundle
-├── evaluation/                       # Fase 3 — PR, costo, auditoría de fuga
-├── serving/                          # Fase 5/6 — FastAPI + dashboard
-├── infra/                            # scripts GCP
-├── docs/                             # model card
-├── config.example.yaml
-└── pyproject.toml
+├── notebooks/                        # 01 exploración · 02 features · 03 eval · 04 train
+├── features/                         # Fase 2 — transacción→vector, sin fuga (+ tests)
+├── training/                         # Fase 4 — train + model + bundle (+ tests)
+├── evaluation/                       # Fase 3 — métricas, splits, leakage_audit (+ tests)
+├── serving/                          # Fase 5 — FastAPI, runtime, explain, Dockerfile (+ tests)
+├── infra/                            # 00-04 scripts GCP (apis, buckets, AR, SA, deploy)
+├── docs/                             # findings por fase + model card
+├── cloudbuild.yaml · config.example.yaml · pyproject.toml
 ```
 
 ---
@@ -88,21 +86,79 @@ dupin/
 | 2 | Features de comportamiento | ✅ Completa — matriz en `gs://dupin-dupin-features/feat-v1/` (2.77M filas) |
 | 3 | Régimen de evaluación honesto | ✅ Completa — resultado en [docs/phase3_findings.md](docs/phase3_findings.md) (recall 99.8% → 20.7%) |
 | 4 | Modelado | ✅ Completa — LightGBM, bundle `m-v1` · ver [docs/phase4_findings.md](docs/phase4_findings.md) (recall 35.3% @1%, 78% @5%) |
-| 5 | Serving end-to-end | ⏳ |
+| 5 | Serving end-to-end | ✅ Código + tests (41/41) · FastAPI `/v1/score` · deploy: `infra/04_deploy.sh` |
 | 6 | Dashboard en vivo | ⏳ |
 | 7 | Empaquetado y narrativa | ⏳ |
+
+---
+
+## Resultados (m-v1) — el gap honesto
+
+El protagonista no es el AUC, sino el **gap descompuesto**: cuánto del rendimiento
+aparente era fuga. Punto de operación: **revisar ≤1% de operaciones**.
+
+| Configuración | Recall | Precision | Nota |
+|---|---|---|---|
+| Balance crudo + split aleatorio | **99.8%** | — | fantasía: fuga de etiqueta + temporal |
+| Honesto + split temporal (desplegable) | **35.3%** | 75.4% | el número real, a presupuesto completo |
+| — tier auto-block | 1.74% | **100%** | bloqueo sin falsos positivos |
+
+Envolvente honesta: ~54% recall al 2% de revisión, ~78% al 5%. PR-AUC temporal
+0.594 (≈28× sobre el azar). **De 99.8% fantasioso a 35.3% honesto** — ese contraste,
+descompuesto en fuga de etiqueta (columnas de balance) y fuga temporal (split), es
+el resultado. Detalle: [docs/phase3_findings.md](docs/phase3_findings.md) ·
+[docs/phase4_findings.md](docs/phase4_findings.md).
+
+---
+
+## API de scoring
+
+`POST /v1/score` — transacción cruda → score + decisión + razón legible + latencia:
+
+```bash
+curl -X POST localhost:8080/v1/score -H 'Content-Type: application/json' -d '{
+  "step": 500, "type": "TRANSFER", "amount": 181000.0,
+  "nameOrig": "C840083671", "nameDest": "C38997010"
+}'
+# → {"score":0.97,"decision":"block","scorable":true,
+#    "reasons":[{"feature":"dest_amount_ratio","message":"Monto 12.4× el promedio histórico del receptor",...}],
+#    "latency_ms":3.1,"model_version":"m-v1","feature_version":"feat-v1"}
+```
+
+Otros: `GET /health` (estado + modelo cargado), `GET /version`, `GET /docs` (OpenAPI).
+El serving usa el **mismo `features/`** del entrenamiento (paridad) y rechaza
+arrancar si falta un componente del bundle.
+
+```bash
+# Local
+export DUPIN_BUNDLE_URI=gs://dupin-dupin-artifacts/m-v1   # o ruta local
+uvicorn serving.app:app --reload
+```
 
 ---
 
 ## Setup
 
 ```bash
-# Configuración (copiar plantilla y ajustar)
-cp config.example.yaml config.yaml
+cp config.example.yaml config.yaml          # configuración
 
-# Fase 1 (en Colab): ingesta + exploración
-#   1. data/download/colab_ingest.ipynb   → PaySim a gs://dupin-dupin-raw/
-#   2. notebooks/01_fraud_exploration.ipynb → caracterización del fraude
+# Plano offline (Colab): ingesta → features → evaluación → modelo
+#   data/download/colab_ingest.ipynb     → PaySim a gs://dupin-dupin-raw/
+#   notebooks/01_fraud_exploration.ipynb → caracterización (Fase 1)
+#   notebooks/02_build_features.ipynb    → matriz feat-v1 (Fase 2)
+#   notebooks/03_evaluate.ipynb          → gap honesto (Fase 3)
+#   notebooks/04_train.ipynb             → bundle m-v1 (Fase 4)
+
+# Plano online (Cloud Run): build + deploy del serving
+export PROJECT_ID=dupin-dupin
+bash infra/00_enable_apis.sh
+bash infra/01_buckets.sh
+bash infra/02_artifact_registry.sh
+bash infra/03_service_accounts.sh
+bash infra/04_deploy.sh                       # verifica el bundle y despliega
+
+# Tests
+python -m pytest -q
 ```
 
 GCP: proyecto `dupin-dupin`, alerta de presupuesto activa.
