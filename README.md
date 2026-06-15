@@ -8,10 +8,9 @@ latencia medida bajo carga.
 **Estado:** prototipo v0.1 · modelo `m-v1` · features `feat-v1`
 **Stack:** GCP (GCS + Colab + Cloud Run) · gradient boosting tabular · FastAPI · dashboard en vivo
 
-> El eje del proyecto **no es el clasificador**, sino el **régimen de evaluación
-> honesto**. El resultado de cabecera es el *gap* entre el número optimista y el
-> desplegable, descompuesto en sus dos causas: **fuga de etiqueta** y **fuga
-> temporal**.
+> El foco del proyecto no es el clasificador sino el régimen de evaluación. El
+> resultado principal es el gap entre la métrica optimista y la desplegable,
+> descompuesto en sus dos causas: fuga de etiqueta y fuga temporal.
 
 ---
 
@@ -44,16 +43,16 @@ móvil. Datos sintéticos: la metodología es el valor, no el número absoluto.
 del dato. **No** aplica a este código, al modelo entrenado ni al dashboard, que
 lo consumen pero no son el dato. Por eso: el CSV de PaySim **nunca** entra al
 repo (vive en GCS + Kaggle), se atribuye la fuente, y el código va bajo licencia
-MIT. Ver [`.gitignore`](.gitignore) (Invariante 8: sin datos ni secretos en git).
+MIT. Los datos y secretos quedan fuera de git (ver [`.gitignore`](.gitignore)).
 
 ### La trampa de las columnas de balance
 
 La documentación de PaySim advierte que las transacciones fraudulentas son
 *anuladas*, por lo que `oldbalanceOrg`, `newbalanceOrig`, `oldbalanceDest` y
 `newbalanceDest` **codifican el etiquetado**. Usarlas crudas da AUC ~0.99 que es
-**fuga de etiqueta**, no detección. Dupin las prohíbe como features crudas, lo
-demuestra en la Fase 1 y lo audita en la Fase 3. Ese error —común en notebooks de
-Kaggle— es uno de los dos ejes del hallazgo central.
+fuga de etiqueta, no detección. Dupin las prohíbe como features crudas, lo
+demuestra en la Fase 1 y lo audita en la Fase 3. Ese error, común en notebooks de
+Kaggle, es uno de los dos ejes del resultado.
 
 ---
 
@@ -81,47 +80,45 @@ dupin/
 
 | Fase | Descripción | Estado |
 |------|-------------|--------|
-| 0 | Dataset, licencia, pregunta, GCP | ✅ Completa |
-| 1 | Exploración y entendimiento del fraude | ✅ Completa — ver [docs/phase1_findings.md](docs/phase1_findings.md) |
-| 2 | Features de comportamiento | ✅ Completa — matriz en `gs://dupin-dupin-features/feat-v1/` (2.77M filas) |
-| 3 | Régimen de evaluación honesto | ✅ Completa — resultado en [docs/phase3_findings.md](docs/phase3_findings.md) (recall 99.8% → 20.7%) |
-| 4 | Modelado | ✅ Completa — LightGBM, bundle `m-v1` · ver [docs/phase4_findings.md](docs/phase4_findings.md) (recall 35.3% @1%, 78% @5%) |
-| 5 | Serving end-to-end | ✅ **Desplegado en Cloud Run** · FastAPI `/v1/score` · 41/41 tests |
-| 6 | Dashboard en vivo | ✅ **Desplegado** · consola de riesgo same-origin (stream, KPIs, umbral interactivo) |
-| 7 | Empaquetado y narrativa | ✅ Completa — [model card](docs/model_card_m-v1.md) |
+| 0 | Dataset, licencia, pregunta, GCP | Completa |
+| 1 | Exploración y entendimiento del fraude | Completa — [docs/phase1_findings.md](docs/phase1_findings.md) |
+| 2 | Features de comportamiento | Completa — matriz en `gs://dupin-dupin-features/feat-v1/` (2.77M filas) |
+| 3 | Régimen de evaluación honesto | Completa — [docs/phase3_findings.md](docs/phase3_findings.md) |
+| 4 | Modelado | Completa — LightGBM, bundle `m-v1` ([docs/phase4_findings.md](docs/phase4_findings.md)) |
+| 5 | Serving end-to-end | Desplegado en Cloud Run · FastAPI `/v1/score` |
+| 6 | Dashboard en vivo | Desplegado · consola same-origin (stream, KPIs, umbral) |
+| 7 | Empaquetado y narrativa | Completa — [model card](docs/model_card_m-v1.md) |
 
 ---
 
-## Resultados (m-v1) — el gap honesto
+## Resultados (m-v1)
 
-El protagonista no es el AUC, sino el **gap descompuesto**: cuánto del rendimiento
-aparente era fuga. Punto de operación: **revisar ≤1% de operaciones**.
+Lo que se reporta es el gap entre la métrica optimista y la desplegable, no el AUC.
+Punto de operación: revisar como máximo el 1% de las operaciones.
 
 | Configuración | Recall | Precision | Nota |
 |---|---|---|---|
-| Balance crudo + split aleatorio | **99.8%** | — | fantasía: fuga de etiqueta + temporal |
-| Honesto + split temporal (desplegable) | **35.3%** | 75.4% | el número real, a presupuesto completo |
-| — tier auto-block | 1.74% | **100%** | bloqueo sin falsos positivos |
+| Balance crudo + split aleatorio | 99.8% | — | columnas con fuga + orden aleatorio |
+| Honesto + split temporal (desplegable) | 35.3% | 75.4% | a presupuesto de revisión completo |
+| Tier de auto-block | 1.74% | 100% | sin falsos positivos |
 
-Envolvente honesta: ~54% recall al 2% de revisión, ~78% al 5%. PR-AUC temporal
-0.594 (≈28× sobre el azar). **De 99.8% fantasioso a 35.3% honesto** — ese contraste,
-descompuesto en fuga de etiqueta (columnas de balance) y fuga temporal (split), es
-el resultado. Detalle: [docs/phase3_findings.md](docs/phase3_findings.md) ·
-[docs/phase4_findings.md](docs/phase4_findings.md).
+Envolvente sobre el test temporal: ~54% de recall al 2% de revisión, ~78% al 5%.
+PR-AUC temporal 0.594 (≈28× la tasa base). El gap del 99.8% al 35.3% se descompone
+en fuga de etiqueta (columnas de balance) y fuga temporal (split aleatorio vs.
+temporal). Detalle en [phase3_findings](docs/phase3_findings.md) y
+[phase4_findings](docs/phase4_findings.md).
 
 ---
 
 ## Alcance y limitaciones
 
-Honestidad de origen, declarada explícitamente:
-
-- **Dato sintético.** Entrenado y evaluado sobre PaySim. Los patrones de fraude
-  sintéticos son más simples y separables que el fraude real: **las métricas
-  absolutas no se transfieren a producción.** El valor es la *metodología*, no el
-  número. Esto **no es un modelo de producción.**
+- **Dato sintético.** Entrenado y evaluado sobre PaySim. Los patrones sintéticos
+  son más simples y separables que el fraude real, así que las métricas absolutas
+  no se transfieren a producción. Esto no es un modelo de producción; el aporte es
+  la metodología.
 - **Sin grafos de entidades** (v1 es tabular por entidad individual).
 - **Scoring por transacción, no por sesión.**
-- **Umbral único global**, sin segmentación por cliente/canal.
+- **Umbral único global**, sin segmentación por cliente o canal.
 - **Estado cold-start en serving** (en producción iría sobre un feature store).
 
 Detalle completo en la [model card](docs/model_card_m-v1.md).
@@ -132,10 +129,10 @@ Detalle completo en la [model card](docs/model_card_m-v1.md).
 
 ### Fase 1 — Exploración del fraude
 
-El dataset crudo de PaySim. Ya en las primeras filas se ve la trampa: las
+El dataset crudo de PaySim. Ya en las primeras filas se nota el problema: las
 transacciones de fraude (`isFraud=1`, filas TRANSFER/CASH_OUT) tienen
-`newbalanceOrig = 0` —la cuenta vaciada—, fuga de etiqueta en las columnas de
-balance.
+`newbalanceOrig = 0`, la cuenta vaciada. Eso es la fuga de etiqueta en las columnas
+de balance.
 
 ![PaySim crudo](docs/images/paysim-raw-head.png)
 
@@ -150,37 +147,37 @@ legítimos, pero con fuerte solapamiento: el monto solo no separa.
 ![Montos fraude vs legítimo](docs/images/montos-fraude-vs-legit.png)
 
 Firma horaria: el volumen legítimo es diurno, pero el fraude se concentra en la
-**madrugada (3–6h)** —desalineado del tráfico normal—.
+madrugada (3–6h), desalineado del tráfico normal.
 
 ![Fraude por hora del día](docs/images/fraude-por-hora.png)
 
-Estructura temporal sobre los 744 steps (30 días): el volumen está front-loaded y
-cae en la cola, mientras el fraude aparece a lo largo de todo el rango. Esto es lo
-que hace viable —y honesto— el corte temporal.
+Estructura temporal sobre los 744 steps (30 días): el volumen se concentra al
+principio y cae en la cola, mientras el fraude aparece a lo largo de todo el
+rango. Por eso el corte temporal es viable.
 
 ![Estructura temporal](docs/images/estructura-temporal.png)
 
 ### Fase 2 — Matriz de features `feat-v1`
 
-Sanity de la matriz: 2.77M filas en la superficie, tasa base 0.30%, sin NaN y
-**sin columnas de balance**. El `describe()` confirma que los receptores tienen
+Verificación de la matriz: 2.77M filas en la superficie, tasa base 0.30%, sin NaN
+y sin columnas de balance. El `describe()` confirma que los receptores tienen
 historia (`dest_prior_count` media 7.7) mientras `orig_prior_count` es casi cero
-—los originadores son de un solo uso, justo el pivote a `nameDest`—.
+(los originadores son de un solo uso): de ahí el pivote a `nameDest`.
 
 ![Matriz feat-v1](docs/images/matriz-feat-v1.png)
 
 ### Fase 3 — Evaluación honesta
 
-La imagen ancla del proyecto: la **misma** capacidad del modelo medida con split
-aleatorio (optimista) vs. temporal (honesto). La curva temporal por debajo a
-recall medio-alto es el optimismo que el split aleatorio esconde.
+La misma capacidad del modelo medida con split aleatorio (optimista) vs. temporal
+(honesto). La separación entre las dos curvas a recall medio-alto es el optimismo
+que introduce el split aleatorio.
 
 ![Curva PR temporal vs aleatorio](docs/images/curva-pr-temporal-vs-aleatorio.png)
 
 ### Fase 4 — Envolvente del modelo final
 
 LightGBM sobre el test temporal: cuánto fraude se atrapa según el presupuesto de
-revisión. A 1% se atrapa ~35%, a 5% ~78%. Es el techo honesto y desplegable.
+revisión. A 1% se atrapa ~35%, a 5% ~78%.
 
 ![Envolvente recall vs presupuesto](docs/images/envolvente-recall-presupuesto.png)
 
