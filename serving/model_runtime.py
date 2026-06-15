@@ -63,6 +63,7 @@ class ModelRuntime:
         self._lock = Lock()
         self.scored_count = 0
         self.warm_entities = 0
+        self.warm_error: str | None = None
         # Estado de entidades en vivo. Arranca vacío; un warm-state opcional lo
         # precarga con la historia previa al demo (ver _load_warm_state).
         from features.entity_state import FeatureState
@@ -102,7 +103,12 @@ class ModelRuntime:
         runtime = cls(bundle, config)
         warm_uri = os.environ.get("DUPIN_WARM_STATE_URI", "")
         if warm_uri:
-            runtime._load_warm_state(warm_uri)
+            # El warm-state es opcional: si falta o falla, se degrada a cold-start
+            # sin tumbar el servicio (solo el bundle es obligatorio).
+            try:
+                runtime._load_warm_state(warm_uri)
+            except Exception as exc:  # noqa: BLE001
+                runtime.warm_error = str(exc)
         return runtime
 
     def score(self, step: int, tx_type: str, amount: float, name_orig: str, name_dest: str) -> dict:

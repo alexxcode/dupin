@@ -62,6 +62,7 @@ def health() -> dict:
         "model_version": _runtime.bundle.model_version if _runtime else None,
         "scored_count": _runtime.scored_count if _runtime else 0,
         "warm_entities": _runtime.warm_entities if _runtime else 0,
+        "warm_error": _runtime.warm_error if _runtime else None,
         "error": _load_error,
     }
 
