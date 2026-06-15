@@ -88,7 +88,7 @@ dupin/
 | 4 | Modelado | ✅ Completa — LightGBM, bundle `m-v1` · ver [docs/phase4_findings.md](docs/phase4_findings.md) (recall 35.3% @1%, 78% @5%) |
 | 5 | Serving end-to-end | ✅ **Desplegado en Cloud Run** · FastAPI `/v1/score` · 41/41 tests |
 | 6 | Dashboard en vivo | ✅ **Desplegado** · consola de riesgo same-origin (stream, KPIs, umbral interactivo) |
-| 7 | Empaquetado y narrativa | ✅ Completa — [model card](docs/model_card_m-v1.md) · [guion de difusión](docs/difusion.md) |
+| 7 | Empaquetado y narrativa | ✅ Completa — [model card](docs/model_card_m-v1.md) |
 
 ---
 
