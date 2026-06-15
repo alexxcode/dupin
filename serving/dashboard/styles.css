@@ -96,8 +96,12 @@ aside { display: grid; grid-template-rows: auto 1fr; gap: 14px; min-height: 0; }
 .reason { margin-bottom: 11px; }
 .reason .msg { margin-bottom: 4px; }
 .reason .bar { height: 6px; background: #0a0e15; border-radius: 4px; overflow: hidden; }
-.reason .bar > i { display: block; height: 100%; background: var(--accent); }
-.reason .bar > i.neg { background: var(--muted); }
+.reason .bar > i { display: block; height: 100%; background: #f85149; }
+.reason .bar > i.neg { background: #2ea043; }
+.reason .dir.up { color: #f85149; }
+.reason .dir.down { color: #2ea043; }
+.reasons-hint { font-size: 11px; color: var(--muted); margin-bottom: 12px; }
+.dec.approve { color: #2ea043; } .dec.review { color: #d29922; } .dec.block { color: #f85149; }
 
 /* Threshold bar */
 .threshold-bar { display: grid; grid-template-columns: auto 1fr auto; align-items: center; gap: 18px; padding: 14px 22px; border-top: 1px solid var(--line); background: var(--panel-2); }

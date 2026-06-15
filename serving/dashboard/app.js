@@ -121,20 +121,27 @@ function selectRow(rec) {
 }
 
 function renderReasons(rec) {
+  const d = decisionOf(rec.score);
   const gt = rec.isFraud
     ? '<span style="color:#f85149">fraude real</span>'
     : '<span style="color:#2ea043">legítimo</span>';
+  const hasContrib = rec.reasons.some((x) => x.contribution != null);
   const maxc = Math.max(1e-9, ...rec.reasons.map((x) => Math.abs(x.contribution ?? 0)));
   const items = rec.reasons.map((x) => {
     const c = x.contribution ?? 0;
+    const up = c > 0;
     const w = Math.round((Math.abs(c) / maxc) * 100);
+    const arrow = x.contribution == null ? "" :
+      `<span class="dir ${up ? "up" : "down"}">${up ? "▲" : "▼"}</span> `;
     const bar = x.contribution == null ? "" :
-      `<div class="bar"><i class="${c < 0 ? "neg" : ""}" style="width:${w}%"></i></div>`;
-    return `<div class="reason"><div class="msg">${x.message}</div>${bar}</div>`;
+      `<div class="bar"><i class="${up ? "" : "neg"}" style="width:${w}%"></i></div>`;
+    return `<div class="reason"><div class="msg">${arrow}${x.message}</div>${bar}</div>`;
   }).join("");
+  const hint = hasContrib ? '<div class="reasons-hint">▲ sube el riesgo · ▼ lo baja</div>' : "";
   $("reasons").innerHTML =
     `<div class="tx-line">t${rec.tx.step} · ${rec.tx.type} · $${money.format(rec.tx.amount)}
-       → ${rec.tx.nameDest}<br>score <b>${rec.score.toFixed(4)}</b> · ${gt}</div>${items}`;
+       → ${rec.tx.nameDest}<br>score <b>${rec.score.toFixed(4)}</b> ·
+       <b class="dec ${d}">${d}</b> · ${gt}</div>${hint}${items}`;
 }
 
 // ── KPIs ──────────────────────────────────────────────────────────────────────
