@@ -81,6 +81,18 @@ class DestState:
         while events and events[0][0] <= cutoff:
             events.popleft()
 
+    # ── Serialización (para snapshots de warm-start del serving) ──
+    def to_list(self) -> list:
+        return [self.count, self.sum_amt, self.sumsq_amt, self.last_step,
+                [[s, a] for s, a in self._events]]
+
+    @classmethod
+    def from_list(cls, data: list) -> "DestState":
+        st = cls()
+        st.count, st.sum_amt, st.sumsq_amt, st.last_step, events = data
+        st._events = deque((int(s), float(a)) for s, a in events)
+        return st
+
 
 class FeatureState:
     """Almacén de estados por entidad. Compartido por batch y serving."""
@@ -107,3 +119,24 @@ class FeatureState:
             self._dest[dest_id] = ds
         ds.update(step, amount, self.config.max_window)
         self._orig_count[orig_id] = self._orig_count.get(orig_id, 0) + 1
+
+    # ── Snapshot (warm-start del serving) ──
+    def snapshot(self, dest_ids=None, orig_ids=None) -> dict:
+        """Serializa el estado, opcionalmente acotado a un subconjunto de entidades
+        (p. ej. solo las del feed del demo, para un snapshot pequeño)."""
+        if dest_ids is None:
+            dest = {k: v.to_list() for k, v in self._dest.items()}
+        else:
+            dest = {k: self._dest[k].to_list() for k in dest_ids if k in self._dest}
+        if orig_ids is None:
+            orig = dict(self._orig_count)
+        else:
+            orig = {k: self._orig_count[k] for k in orig_ids if k in self._orig_count}
+        return {"feature_version": self.config.feature_version, "dest": dest, "orig": orig}
+
+    @classmethod
+    def from_snapshot(cls, snap: dict, config: FeatureConfig) -> "FeatureState":
+        fs = cls(config)
+        fs._dest = {k: DestState.from_list(v) for k, v in snap.get("dest", {}).items()}
+        fs._orig_count = {k: int(v) for k, v in snap.get("orig", {}).items()}
+        return fs

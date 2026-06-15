@@ -142,3 +142,26 @@ def build_features(
         meta = pd.DataFrame(meta_rows, columns=META_COLUMNS)
         out = pd.concat([meta.reset_index(drop=True), out], axis=1)
     return out
+
+
+def build_state(
+    df: pd.DataFrame, config: FeatureConfig, max_step: int | None = None
+) -> FeatureState:
+    """Reproduce el stream y devuelve el FeatureState tras procesar las tx con
+    `step < max_step` (o todas si None).
+
+    Se usa para construir el snapshot de warm-start del serving: el estado de las
+    entidades tal como estaba justo ANTES del periodo de demo, para que el scoring
+    en vivo vea la misma historia que la evaluación offline (no cold-start).
+    """
+    ordered = df.sort_values(config.time_col, kind="stable")
+    state = FeatureState(config)
+    cols = [config.time_col, config.type_col, config.amount_col,
+            config.orig_col, config.dest_col]
+    for row in ordered[cols].itertuples(index=False, name=None):
+        step, _tx_type, amount, orig_id, dest_id = row
+        step = int(step)
+        if max_step is not None and step >= max_step:
+            break  # ordenado por step asc → podemos cortar
+        state.update(orig_id, dest_id, step, float(amount))
+    return state

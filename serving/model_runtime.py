@@ -38,6 +38,18 @@ def _download_bundle_from_gcs(gcs_prefix: str, local_dir: str) -> str:
     return local_dir
 
 
+def _read_bytes(uri: str) -> bytes:
+    """Lee bytes desde gs:// o ruta local."""
+    if uri.startswith("gs://"):
+        from google.cloud import storage
+
+        _, _, rest = uri.partition("gs://")
+        bucket_name, _, obj = rest.partition("/")
+        return storage.Client().bucket(bucket_name).blob(obj).download_as_bytes()
+    with open(uri, "rb") as f:
+        return f.read()
+
+
 class ModelRuntime:
     def __init__(self, bundle: ModelBundle, config: FeatureConfig = DEFAULT_CONFIG):
         if bundle.feature_version != config.feature_version:
@@ -50,10 +62,34 @@ class ModelRuntime:
         self._scope = set(config.scope_types)
         self._lock = Lock()
         self.scored_count = 0
-        # Estado de entidades en vivo (cold-start). Lo comparte el mismo motor
-        # de features del entrenamiento.
+        self.warm_entities = 0
+        # Estado de entidades en vivo. Arranca vacío; un warm-state opcional lo
+        # precarga con la historia previa al demo (ver _load_warm_state).
         from features.entity_state import FeatureState
         self.state = FeatureState(config)
+
+    def _load_warm_state(self, uri: str) -> None:
+        """Precarga el FeatureState desde un snapshot (gs:// o local, .json/.gz).
+
+        Hace que el scoring en vivo vea la misma historia que la evaluación
+        offline en lugar de arrancar cold-start. Valida feature_version."""
+        import gzip
+        import json
+
+        from features.entity_state import FeatureState
+
+        data = _read_bytes(uri)
+        if uri.endswith(".gz"):
+            data = gzip.decompress(data)
+        snap = json.loads(data)
+        snap_fv = snap.get("feature_version")
+        if snap_fv != self.config.feature_version:
+            raise ValueError(
+                f"warm-state feature_version ({snap_fv}) != código "
+                f"({self.config.feature_version})"
+            )
+        self.state = FeatureState.from_snapshot(snap, self.config)
+        self.warm_entities = len(snap.get("dest", {}))
 
     @classmethod
     def from_uri(cls, uri: str, config: FeatureConfig = DEFAULT_CONFIG) -> "ModelRuntime":
@@ -63,7 +99,11 @@ class ModelRuntime:
         else:
             local = uri
         bundle = ModelBundle.load(local)   # rechaza si falta componente
-        return cls(bundle, config)
+        runtime = cls(bundle, config)
+        warm_uri = os.environ.get("DUPIN_WARM_STATE_URI", "")
+        if warm_uri:
+            runtime._load_warm_state(warm_uri)
+        return runtime
 
     def score(self, step: int, tx_type: str, amount: float, name_orig: str, name_dest: str) -> dict:
         """Puntúa una transacción cruda y actualiza el estado. Thread-safe."""
