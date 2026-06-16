@@ -181,22 +181,49 @@ revisión. A 1% se atrapa ~35%, a 5% ~78%.
 
 ![Envolvente recall vs presupuesto](docs/images/envolvente-recall-presupuesto.png)
 
-### Fases 5–6 — Serving y dashboard en vivo
+### Fases 5–6 — Serving y dashboard de monitoreo
 
-El modelo desplegado en Cloud Run con su dashboard de monitoreo: stream en vivo
-coloreado por decisión, score como medidor, panel de razones y control de umbral
-interactivo. Sobre el feed real del periodo de test, los fraudes cruzan el umbral
-(REVIEW ámbar, BLOCK rojo) con su marca de ground-truth. **Pruébalo en vivo:**
-[dupin-705834513207.us-central1.run.app](https://dupin-705834513207.us-central1.run.app).
+El modelo se sirve en Cloud Run con un dashboard de monitoreo: stream de
+transacciones coloreado por decisión, score como medidor, panel de razones
+(atribución real del modelo · ▲ sube el riesgo / ▼ lo baja) y control de umbral
+interactivo. Latencia ~15–20 ms por transacción. *(Demo en iteración.)*
+
+**Flujo normal.** La mayoría se aprueba sin fricción; el panel explica cada
+decisión por la contribución del modelo a ese score.
+
+![Flujo normal](docs/dashboards/flujo-normal.png)
+
+**Fraude atrapado.** Un CASH_OUT de $951k marcado para revisión, con los factores
+que lo elevaron: monto, tipo de operación y desviación frente al patrón del
+receptor. Precisión 100% en ese punto de operación.
+
+![Fraude atrapado](docs/dashboards/fraude-atrapado-951k.png)
+
+**El caso difícil.** $5.566.368 a una cuenta sin historial, a las 22h → REVIEW
+(score 0.997). El panel dice por qué: receptor nuevo + monto + hora.
+
+![Fraude de $5.5M a cuenta nueva](docs/dashboards/fraude-5.5M-cuenta-nueva.png)
+
+**Honestidad: también se equivoca.** Un legítimo de $686k a las 21h, +2.5σ sobre
+el patrón del receptor, va a revisión (falso positivo). El dashboard lo muestra,
+no lo esconde.
+
+![Falso positivo](docs/dashboards/falso-positivo-686k.png)
+
+**Punto de operación agresivo.** Bajando el umbral se atrapa más fraude (aquí
+61%) a costa de revisar más operaciones (9.9%): el trade-off recall vs. carga
+operativa, tangible y en vivo.
+
+![Stream activo](docs/dashboards/stream-activo.png)
 
 ---
 
 ## API de scoring
 
-**En vivo:** `https://dupin-705834513207.us-central1.run.app` — abre la raíz para el
-**dashboard de monitoreo** (stream de transacciones coloreadas por decisión, score
-como medidor, panel de razones, KPIs de recall/precisión/latencia, y control de
-umbral interactivo que hace tangible el trade-off). Cloud Run, escala a cero.
+El servicio expone un endpoint de scoring y sirve el **dashboard de monitoreo**
+same-origin desde su raíz (stream coloreado por decisión, score como medidor,
+panel de razones, KPIs de recall/precisión/latencia, y control de umbral
+interactivo). Cloud Run, escala a cero.
 
 `POST /v1/score` — transacción cruda → score + decisión + razón legible + latencia:
 
